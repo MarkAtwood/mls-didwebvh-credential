@@ -9,6 +9,8 @@ date:
 v: 3
 ipr: trust200902
 area: "Security"
+venue:
+  github: "MarkAtwood/mls-didwebvh-credential"
 keyword:
  - MLS
  - MIMI
