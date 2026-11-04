@@ -83,5 +83,6 @@ did:webvh defines no freshness mechanism. The draft makes freshness a property o
 - [RFC 9750, MLS Architecture, §8.4.3.1](https://www.rfc-editor.org/rfc/rfc9750)
 - [draft-mahy-mimi-identity-05](https://www.ietf.org/archive/id/draft-mahy-mimi-identity-05.txt)
 - [draft-atwood-mls-didwebvh-credential-00 (gist, not yet submitted)](https://gist.github.com/MarkAtwood/871f8594d07c891948b47c7d74fbd0c6)
+- [Source repository for the draft](https://github.com/MarkAtwood/mls-didwebvh-credential) (kramdown-rfc source and built XML)
 - RFC 9420 (MLS): cited from the original analysis, not re-checked here.
 - [draft-ietf-mimi-protocol-07](https://datatracker.ietf.org/doc/draft-ietf-mimi-protocol/) (current revision per the datatracker as of 2026-11-04)
