@@ -11,6 +11,19 @@ provider with a participant in the room is honest. The flow in Section
 3.6 shows how a single provider can add a client to every room its users
 are in without any other member acting.
 
+Current code already accepts this silently. Air, Phoenix R&D's MLS
+messenger, which uses the MIMI room-policy and content formats
+(https://github.com/phnx-im/air, commit 48da945, read 2026-11-04),
+accepts a resync External Commit if the new credential is signed by the
+user's own provider and carries the same user ID as the leaf it replaces
+(`coreclient/src/groups/client_auth_info/mod.rs`, lines 71-100). It
+creates membership messages only for Add proposals, and it skips the
+Remove that a resync carries (`coreclient/src/groups/commit/merge.rs`,
+lines 192-195 and 241-275). So a provider can replace one of its user's
+clients with its own and no member sees a message. The user notices only
+that the real client has lost the room. This is not a bug in Air: the
+protocol asks for nothing more.
+
 The text records the risk without choosing a mitigation, so the WG can
 decide in writing whether to require one or accept the risk.
 
@@ -104,6 +117,13 @@ user fetches Cathy's key material ({{fetch-key-material}}). The
 attacker's client is then added at the moment Cathy is added to a new
 room.
 
+The provider can also replace one of Cathy's clients instead of adding
+one. An External Commit may remove the sender's earlier appearance in
+the group (a "resync", {{Section 12.4.3.2 of RFC9420}}), so the
+provider's client joins and Cathy's real client leaves in a single
+Commit. A client that treats every resync as routine shows other
+members nothing. Cathy sees only that her client has lost the room.
+
 Consequences:
 
 * A room's confidentiality is only as strong as the least trustworthy
@@ -131,13 +151,19 @@ None of the following is required by this document:
   client has joined.
 * Out-of-band comparison of the MLS `authentication_secret`, as
   {{Section 8.4.3.1 of RFC9750}} recommends.
-* User interfaces that announce every new client of every participant.
+* User interfaces that announce every new client of every participant,
+  including a client that replaces an earlier one by resync.
+* Accepting a resync External Commit only if it carries a PSK proposal
+  showing that the joiner was in an earlier epoch, as {{Section 12.4.3.2
+  of RFC9420}} suggests. A provider that never held the room's secrets
+  cannot produce that PSK.
 * Credential types in which the user, not the provider, authorizes each
   of the user's clients, so that a provider cannot produce a valid
   credential for a client the user did not approve.
 
 The first three detect the attack after the new client has received
-epoch secrets; only the fourth prevents it.
+epoch secrets. The fourth prevents only the resync variant. Only the
+fifth prevents all of them.
 
 ---
 
