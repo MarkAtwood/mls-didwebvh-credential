@@ -427,8 +427,8 @@ that contains `did_webvh_heads` MUST also contain a
 `extension_types` and `did_webvh` in `credential_types`
 ({{Section 11.1 of RFC9420}}), so that every member enforces the rules.
 A group whose tree contains a `did_webvh` credential MUST carry the
-`did_webvh_heads` GroupContext extension, with an empty `heads` list
-when no leaf carries one:
+`did_webvh_heads` GroupContext extension, and a group that carries it
+MUST NOT remove it:
 
 ~~~ tls-presentation
 struct {
@@ -454,15 +454,18 @@ struct {
   lexicographic order of the key bytes (not of their encoding), with no
   duplicates.
 
-`heads` MUST contain exactly one entry for each SCID that appears in a
-leaf of the ratchet tree, and no other entries. Entries are sorted in
-ascending lexicographic byte order of `scid`, a shorter value that is a
-prefix of a longer one sorting first.
+`heads` MUST contain an entry for each SCID that appears in a leaf of
+the ratchet tree. It also keeps the entry for every SCID the group has
+recorded before, even when no leaf with that SCID remains: an entry is
+never removed. At most one entry has a given `scid`. Entries are sorted
+in ascending lexicographic byte order of `scid`, a shorter value that is
+a prefix of a longer one sorting first.
 
 The extension lets the group remember a revocation after every leaf
-that carried the revoking log has left. Without it, the newest log the
-group knew about could leave with the last device that carried it, and
-an older log would make a revoked key valid again. Because the extension
+that carried the revoking log has left, and after every device of that
+user has left. Without it, the newest log the group knew about could
+leave with the last device that carried it, and an older log would make
+a revoked key valid again. Because the extension
 is part of the GroupContext, a new member receives it in the Welcome,
 and it feeds the key schedule.
 
@@ -496,10 +499,14 @@ follows:
 * If R does not exist, the expected entry has L's head `versionId` and
   the authorized keys of L's head DID document.
 
+For each SCID S that has an entry in the previous epoch's
+`did_webvh_heads` but appears in no leaf of the resulting tree, the
+expected entry is that previous entry, unchanged.
+
 The `did_webvh_heads` extension in the resulting GroupContext MUST
 contain exactly the expected entries. A Commit that changes the expected
 value MUST therefore include a GroupContextExtensions proposal that sets
-it. An entry for an SCID with no remaining leaves is dropped.
+it. A Commit that only removes leaves never changes the expected value.
 
 ### Rules
 
@@ -538,15 +545,16 @@ further rules:
   an existing member ({{open-issues}}).
 
 A member joining by Welcome has no previous epoch, so it cannot compute
-the expected entries. It instead checks that `did_webvh_heads` has
-exactly one entry per SCID in the tree, in sorted order, and the
-consistency and authorization rules, taking R for each SCID from the
+the expected entries. It instead checks that `did_webvh_heads` has an
+entry for each SCID in the tree, in sorted order with no duplicates, and
+the consistency and authorization rules, taking R for each SCID from the
 GroupContext it receives. It also checks that no leaf's head version
-number is greater than the recorded version for its SCID. For each recorded head that some
-leaf's log contains as its head, it also checks that `authorized_keys`
-matches that DID document. If no leaf carries the recorded version, the
-joiner relies on the GroupContext, which the existing members agreed on
-through the key schedule.
+number is greater than the recorded version for its SCID. For each
+recorded head that some leaf's log contains as its head, it also checks
+that `authorized_keys` matches that DID document. For an entry that no
+leaf carries, including the entry of an SCID with no leaves, the joiner
+relies on the GroupContext, which the existing members agreed on through
+the key schedule.
 
 ### Successor Credentials
 
@@ -653,32 +661,31 @@ RFC Editor: please remove this section before publication.
 
 The author would like the working group's view on these questions:
 
-1. Record lifetime. An entry in `did_webvh_heads` is dropped when the
-   last leaf with its SCID leaves, which also drops the memory of any
-   revocation ({{stale-log}}). Keeping entries for SCIDs with no leaves
-   fixes this at the cost of a record that grows with every user who has
-   ever been a member.
-2. Extension or component. Carrying the record as a component of the
+1. Extension or component. Carrying the record as a component of the
    `app_data_dictionary` extension {{I-D.ietf-mls-extensions}}, updated
    by AppDataUpdate proposals, would let an external Commit or an
    external sender update it. That would allow new users to join by
    external Commit, which this document does not, and would avoid a
    GroupContextExtensions proposal in every Commit that changes the
    record.
-3. ReInit and branching. Neither carries the record into the new group,
+2. ReInit and branching. Neither carries the record into the new group,
    so a revocation known to the old group can be lost. A ReInit could be
    required to carry `did_webvh_heads` in its extensions.
-4. Revocation without a controller's device. A newer log reaches a group
+3. Revocation without a controller's device. A newer log reaches a group
    only through a leaf that carries it. A proposal that carries a newer
    log as evidence would let any member raise the record, and would give
    a way to propagate deactivation.
-5. Other signature schemes. Supporting cipher suites whose signature
+4. Other signature schemes. Supporting cipher suites whose signature
    scheme is not Ed25519, such as 0x0002 with P-256, would admit
    deployments that need them.
-6. Cost of GroupContextExtensions. Because a GroupContextExtensions
+5. Cost of GroupContextExtensions. Because a GroupContextExtensions
    proposal replaces the whole extension list and only one is allowed
    per Commit, a pending GroupContextExtensions proposal from another
    party cannot be combined with a change to the record.
+6. Record growth. Entries are never removed, so the record grows with
+   every user who has ever been a member. A way to retire entries
+   without losing revocations, for example after the user's log has been
+   deactivated, may be needed for long-lived groups.
 
 # Security Considerations
 
@@ -743,19 +750,17 @@ nothing to withhold from. The newest log reaches a group when any of the
 controller's devices sends a Commit.
 
 Once a group has accepted a revoking log, the recorded head keeps the
-revoked key out even after the device that committed it leaves, as long
-as at least one leaf with that SCID remains in the group.
+revoked key out even after the device that committed it leaves, and
+after every device of that user has left, because entries are never
+removed.
 
 The remaining exposure is a group that never saw the revocation. That
 includes a group that contains a revoked device of the controller but
 none of the controller's other devices, and any group to which the
 provider, acting as KeyPackage directory, delivers one of the revoked
 device's old KeyPackages. Nobody in such a group has the newer log, so
-the revoked device stays until someone removes it. It also includes a
-group that all of the controller's devices have left, because the record
-for an SCID is dropped with its last leaf; such a group accepts a later
-Add of a revoked device's old KeyPackage. Clients SHOULD remember the
-highest log version they have verified for
+the revoked device stays until someone removes it. Clients SHOULD
+remember the highest log version they have verified for
 each SCID, across all groups, and SHOULD refuse to add a KeyPackage
 whose log is older, which mirrors the cache-and-compare mitigation in
 {{DIDWEBVH}}. This check is local, so it guides what a client proposes,
@@ -803,7 +808,9 @@ copies to the tree. Each leaf can carry up to 2 MiB (log and witness
 file), so the ratchet tree in a Welcome or GroupInfo of a large group can
 be very large, and a joiner validates every leaf's log, each entry with
 its own signature verification. Implementations SHOULD verify a log
-shared by several leaves once. The 1,048,576-byte limits bound the cost
+shared by several leaves once. The `did_webvh_heads` record grows by
+one entry for each user who has ever been a member and is never
+pruned. The 1,048,576-byte limits bound the cost
 of a malicious log. This document defines no way to compact a log.
 
 # Privacy Considerations {#privacy}
