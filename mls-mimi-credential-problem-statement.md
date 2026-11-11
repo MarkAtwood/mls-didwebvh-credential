@@ -1,6 +1,6 @@
 # Problem Statement: Provider-Independent Credential Validation for MLS/MIMI
 
-Nov 2, 2026 · @Mark
+Nov 2, 2026 · Mark Atwood
 
 ## Problem
 
@@ -48,7 +48,7 @@ The solution need not build on the SD-JWT / SD-CWT credential draft: a token nee
 | 2. Verifiable history | Entries are hash-chained via `versionId`; the DID embeds a SCID hashed from the first entry; `nextKeyHashes` enables pre-rotation | Spec lists "truncation or withholding of log entries" as a known attack on resolvers | No resolver: logs travel in leaves. The `did_webvh_heads` GroupContext extension records the highest head per SCID and never moves backwards |
 | 3. Deterministic validation | Verification of a given log is deterministic | Clients holding different log versions disagree; the spec checks `versionTime` against the resolver's clock | Validation depends only on credential bytes, the ratchet tree and GroupContext. No clock check, did:webvh 1.0 and Ed25519 only, fixed 1 MiB log cap |
 | 4. Offline at join | Spec allows logs from "sources other than its corresponding HTTPS location" with the same verification steps | Log grows with every device change | The full log travels in every leaf. No compaction; the size cap bounds the cost |
-| 5. MLS negotiation | Not applicable to the DID method | Needs code points | New credential type `did_webvh` and GroupContext extension `did_webvh_heads`, both TBD in IANA |
+| 5. MLS negotiation | Not applicable to the DID method | Needs code points | New credential type `did_webvh` and GroupContext extension `did_webvh_heads`, suggested values 0x0008 and 0x0013 |
 
 did:webvh defines no freshness mechanism. The draft makes freshness a property of the group instead: a Commit that brings in a newer log must remove every leaf that log no longer authorizes, and the recorded head keeps those keys out after the committing device leaves. What stays exposed is a group that never saw the revocation, including one to which a provider delivers a revoked device's old KeyPackages. Closing that needs key transparency.
 
