@@ -53,7 +53,6 @@ normative:
     date: 2022-07-19
 
 informative:
-  RFC2804:
   RFC7258:
   RFC9750:
   I-D.mahy-mimi-identity:
@@ -118,9 +117,10 @@ member on provider B accepts Alice's devices because provider A says
 they are Alice's. If provider A is compromised or compelled, it can issue
 a credential binding an attacker's signature key to Alice's identity. The
 attacker's client joins as one of Alice's devices, receives every epoch
-secret, and reads all content. This is the "ghost user" proposal
-{{GHOST}} delivered through federation instead of through a cooperating
-messaging service.
+secret, and reads all content. {{Section 8.4.3.1 of RFC9750}} calls
+this a "ghost user". The same technique has been proposed as an
+exceptional-access mechanism {{GHOST}}; federation removes the need for
+the cooperation of the service the target chose.
 
 The attack is already known. {{Section 8.4.3.1 of RFC9750}} describes
 it: a compromised AS "could validate a signature key pair (or generate a
@@ -133,9 +133,12 @@ systems federate or try to interoperate." This document proposes a way to
 prevent it.
 
 MLS's forward secrecy and post-compromise security do not help: the
-ghost is a member by the protocol's own rules. Regulation widens the
-exposure: Article 7 of the Digital Markets Act {{DMA}} requires designated
-gatekeepers to interoperate with other providers on request.
+ghost is a member by the protocol's own rules.
+
+Interoperability obligations are likely to increase the number of groups
+that span providers. Article 7 of the Digital Markets Act {{DMA}}, for
+example, requires designated gatekeepers to interoperate with other
+providers on request.
 
 The mitigations {{Section 8.4.3.1 of RFC9750}} recommends detect the
 attack rather than prevent it:
@@ -699,23 +702,17 @@ derived from the first entry. Whoever hosts the published log has no
 more power than the provider: members never read the published log
 during validation.
 
-## Pervasive Monitoring and Wiretapping
+## Pervasive Monitoring
 
 {{RFC7258}} states that "pervasive monitoring is a technical attack that
 should be mitigated in the design of IETF protocols, where possible",
 and calls for protocols that make it "significantly more expensive or
 infeasible". Adding a ghost device targets one user, but the capability
 exists in every room. A single compromised or compelled provider can use
-it in every room that contains one of its users, at no cost to itself
-and with no change visible to the cryptography. Federation adds every
+it in every room that contains one of its users, without any change
+visible in the MLS protocol. Federation adds every
 other provider's users to the set of people exposed to that one
 provider.
-
-{{RFC2804}} records that "the IETF has decided not to consider
-requirements for wiretapping as part of the process for creating and
-maintaining IETF standards." No MIMI document states such a
-requirement. A design in which any provider can add an undetectable
-member to a group still provides the equivalent capability.
 
 In groups that require the `did_webvh` credential, this document removes
 that capability for existing identities: a provider cannot authorize a
