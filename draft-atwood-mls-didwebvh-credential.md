@@ -672,7 +672,7 @@ Types" registry defined in {{Section 17.5 of RFC9420}}:
 
 | Value | Name | Recommended | Reference |
 |---|---|---|---|
-| TBD1 | did_webvh | N | RFC XXXX |
+| 0x0008 (suggested) | did_webvh | N | RFC XXXX |
 {: title="New MLS credential type"}
 
 IANA is also requested to add the following entry to the "MLS Extension
@@ -680,7 +680,7 @@ Types" registry defined in {{Section 17.3 of RFC9420}}:
 
 | Value | Name | Message(s) | Recommended | Reference |
 |---|---|---|---|---|
-| TBD2 | did_webvh_heads | GC | N | RFC XXXX |
+| 0x0013 (suggested) | did_webvh_heads | GC | N | RFC XXXX |
 {: title="New MLS extension type"}
 
 --- back
