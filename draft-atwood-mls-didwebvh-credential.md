@@ -65,6 +65,8 @@ informative:
   I-D.mahy-mls-sd-cwt-credential:
   I-D.barnes-mls-addl-creds:
   I-D.ietf-mls-extensions:
+  RFC9943:
+  I-D.ietf-mls-virtual-clients:
   GHOST:
     title: "Principles for a More Informed Exceptional Access Debate"
     author:
@@ -693,6 +695,22 @@ The author would like the working group's view on these questions:
    every user who has ever been a member. A way to retire entries
    without losing revocations, for example after the user's log has been
    deactivated, may be needed for long-lived groups.
+7. Encoding without DIDs. The mechanism does not depend on DIDs. What it
+   needs is a key the user holds that authorizes each device, and a
+   signed, hash-chained history of those authorizations, so that every
+   member can verify additions and revocations offline. did:webvh is
+   one existing encoding of that history. The same property could be
+   built from IETF work instead: a CWT or SD-CWT credential issued by
+   the user's key {{I-D.mahy-mls-sd-cwt-credential}}, with the history
+   as a sequence of signed statements in the style of
+   {{RFC9943}}; a log format defined directly in
+   TLS presentation language; or the user's devices acting as one
+   virtual client {{I-D.ietf-mls-virtual-clients}}, so that only an
+   existing device can add another. In each case, key transparency
+   {{I-D.ietf-keytrans-protocol}} would complement this design, not
+   replace it. It detects a device the provider adds, where this design
+   prevents one, and it can cover first contact. The author would like
+   the working group's view on which encoding to use.
 
 # Security Considerations
 
