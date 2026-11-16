@@ -13,8 +13,11 @@ individual submission:
 
 In MLS as deployed with MIMI, each provider is the Authentication Service
 for its own users. A provider can add a device to every room its users are
-in, and other members can detect this only after the fact (RFC 9750
+in. At best, key transparency lets the user detect it (RFC 9750
 §8.4.3.1). This draft makes that attack fail validation instead.
+
+For a readable overview, see [ietf127/](ietf127/), the notes that go
+with the MLS session at IETF 127 (20 November 2026).
 
 ## Files
 
@@ -25,6 +28,8 @@ in, and other members can detect this only after the fact (RFC 9750
   problem and the requirements a fix must meet.
 - `mimi-protocol-threat-model-proposed-text.md`: proposed threat model text
   for draft-ietf-mimi-protocol-07 Section 9.
+- `ietf127/`: reading notes for the IETF 127 MLS session, with the
+  diagram from the slides.
 
 ## Building
 
