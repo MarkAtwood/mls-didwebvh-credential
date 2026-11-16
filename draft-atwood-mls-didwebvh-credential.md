@@ -725,6 +725,23 @@ The author would like the working group's view on these questions:
    replace it. It detects a device the provider adds, where this design
    prevents one, and it can cover first contact. The author would like
    the working group's view on which encoding to use.
+8. Identity recovery. Losing devices does not lose the identity: an
+   offline recovery key whose hash every entry commits to
+   ({{custody}}) can append an entry that drops the lost devices and
+   adds new ones. Two cases cannot be recovered. If every update key is
+   lost, recovery key included, the log can never be extended or
+   deactivated; the user has to create a new DID, contacts have to pin
+   it again, and groups that recorded the old SCID keep its last head.
+   If an attacker obtains a key the current entry committed to, it can
+   append an entry that commits only to keys it holds and so lock the
+   user out ({{key-compromise}}). Letting the provider override the log
+   would close both cases but would restore the power this document
+   removes. Alternatives include requiring a threshold of update keys
+   for some entries, which the profile in {{webvh-profile}} does not
+   allow today because each entry carries exactly one proof, and a delay
+   before an entry takes effect during which a key committed by an
+   earlier entry can cancel it. Both make the log format and the group
+   rules more complex.
 
 # Security Considerations
 
@@ -759,7 +776,7 @@ every member of the group holds. This document does not stop a party
 that can add members from adding a different identity, or from
 substituting a DID at first contact ({{first-contact}}).
 
-## Update Key Compromise
+## Update Key Compromise {#key-compromise}
 
 An attacker who can sign a valid next entry can add a device, or
 revoke the user's honest devices and so get them removed from groups by
