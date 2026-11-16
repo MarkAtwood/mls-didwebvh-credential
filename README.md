@@ -5,7 +5,9 @@ their messaging provider, authorizes the user's devices. The credential
 carries a did:webvh log, and group members verify it without network
 access.
 
-This draft has not yet been submitted to the IETF datatracker.
+Version -00 was posted on 16 November 2026 (dated 14 November) as an
+individual submission:
+<https://datatracker.ietf.org/doc/draft-atwood-mls-didwebvh-credential/>
 
 ## Why
 
