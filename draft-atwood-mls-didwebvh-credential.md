@@ -705,8 +705,12 @@ The author would like the working group's view on these questions:
    as a sequence of signed statements in the style of
    {{RFC9943}}; a log format defined directly in
    TLS presentation language; or the user's devices acting as one
-   virtual client {{I-D.ietf-mls-virtual-clients}}, so that only an
-   existing device can add another. In each case, key transparency
+   virtual client {{I-D.ietf-mls-virtual-clients}}. Virtual clients
+   alone do not give the property: a new emulator client can join the
+   emulation group externally with any credential the other emulator
+   clients accept ({{Section 6.2 of I-D.ietf-mls-virtual-clients}}), so
+   the credential that admits emulator clients would itself have to be
+   one the user controls. In each case, key transparency
    {{I-D.ietf-keytrans-protocol}} would complement this design, not
    replace it. It detects a device the provider adds, where this design
    prevents one, and it can cover first contact. The author would like
