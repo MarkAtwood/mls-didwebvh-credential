@@ -62,6 +62,7 @@ informative:
   I-D.mahy-mimi-identity:
   I-D.ietf-mimi-protocol:
   I-D.ietf-keytrans-protocol:
+  I-D.ietf-keytrans-architecture:
   I-D.mahy-mls-sd-cwt-credential:
   I-D.barnes-mls-addl-creds:
   I-D.ietf-mls-extensions:
@@ -91,8 +92,8 @@ federate MLS groups, as the More Instant Messaging Interoperability
 (MIMI) work does, every member of a group must accept devices vouched for
 by every other member's provider. Any one provider can therefore add a
 device under one of its users' names to any group that user is in.
-Other members cannot prevent this; at best they detect it after the
-device has joined.
+No member can prevent this; at best, key transparency lets the user
+detect it.
 
 This document defines an MLS credential type in which the user, not the
 provider, authorizes each device. The credential carries the user's
@@ -150,17 +151,26 @@ The mitigations {{Section 8.4.3.1 of RFC9750}} recommends detect the
 attack rather than prevent it:
 
 * Key transparency "would allow for detection of surreptitiously
-  created false credentials". It needs every client to audit every
-  contact's keys, and MIMI does not require it.
+  created false credentials". The user who owns a label monitors it,
+  and a member who receives a credential has extra work only when the
+  version was inserted very recently
+  ({{Section 4.1 of I-D.ietf-keytrans-architecture}}); an application
+  that refuses very recent credentials avoids even that. Key
+  transparency detects a false credential when the owner monitors; it
+  does not stop the provider from creating one, and MIMI does not
+  require it.
 * Out-of-band comparison of the per-epoch `authentication_secret`
   depends on users comparing values for every member, which few do in
   large groups.
 * Showing every membership change to users depends on users noticing an
   extra device among many.
 
-In each case the ghost device has already received epoch secrets by the
-time anyone could notice. Proposals for credentials also keep a single
-authority:
+In each case someone has to notice. Refusing very recent credentials
+can give the owner a chance to notice a ghost device before it joins,
+but the owner can then only raise the alarm: the provider still decides
+which devices are the owner's. With the other two, the ghost device has
+already received epoch secrets by the time anyone could notice.
+Proposals for credentials also keep a single authority:
 
 * X.509 credentials move the authority to a certificate authority, which
   is chosen or operated by the provider or the user's organization, not
@@ -174,8 +184,8 @@ authority:
   trust, cross-signing and Verifiable Credentials for MIMI, but does not
   define a mechanism.
 * The key transparency protocol {{I-D.ietf-keytrans-protocol}} makes
-  bindings auditable, but, as above, detects a ghost device after it has
-  joined.
+  bindings auditable, but, as above, it detects a binding the provider
+  creates rather than preventing one.
 
 ## What This Document Fixes
 
@@ -187,7 +197,7 @@ provider that holds no update key cannot authorize a device.
 |---|---|---|
 | Who can add a device to Alice's identity? | Alice's provider's AS, or anyone who compromises or compels it | Only a holder of one of Alice's did:webvh update keys |
 | How does another member verify Alice's device? | Trusts the AS signature | Verifies Alice's signed, hash-chained log, offline |
-| Can a provider add a device without Alice's keys? | Yes. Other members can detect it only after the device has joined | It cannot authorize a new key. It can still replay a revoked device's old KeyPackages to a group that has not seen the revocation ({{stale-log}}) |
+| Can a provider add a device without Alice's keys? | Yes. Key transparency can let Alice detect it, at best before the device joins | It cannot authorize a new key. It can still replay a revoked device's old KeyPackages to a group that has not seen the revocation ({{stale-log}}) |
 | How is a revoked device removed from a group? | Application policy; no protocol rule | The Commit that carries Alice's newer log MUST remove it |
 | Can two members disagree about a credential's validity? | Yes, if their AS policies differ | No: credential validity depends only on the credential and the group's state ({{deterministic-validation}}) |
 | Does validation make network requests? | Possibly (AS, certificate status checks) | Never |
