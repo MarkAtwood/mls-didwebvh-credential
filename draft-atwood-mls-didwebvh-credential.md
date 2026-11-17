@@ -319,10 +319,18 @@ struct {
         case x509:
             Certificate certificates<V>;
         case did_webvh:
-            DIDWebVHCredential did_webvh;
+            opaque did_webvh<V>;
     };
 } Credential;
 ~~~
+
+The `did_webvh` field holds the TLS encoding of a DIDWebVHCredential.
+It is one variable-length vector, as are the basic and x509 credentials
+of {{RFC9420}} and the multi-credentials of {{I-D.ietf-mls-extensions}},
+so that a party that does not support `did_webvh`, such
+as a Distribution Service, can still parse a LeafNode that carries one
+and skip the credential. Deployed MLS libraries carry a credential type
+they do not know in exactly this form.
 
 `did_log`:
 : The DID Log in the `did.jsonl` format of {{DIDWEBVH}}, from the first
