@@ -61,6 +61,7 @@ informative:
   RFC9750:
   I-D.mahy-mimi-identity:
   I-D.ietf-mimi-protocol:
+  I-D.ietf-mimi-room-policy:
   I-D.ietf-keytrans-protocol:
   I-D.ietf-keytrans-architecture:
   I-D.mahy-mls-sd-cwt-credential:
@@ -634,6 +635,15 @@ The revocation reaches a group when one of the controller's own devices
 commits to it, not when a resolver notices. {{stale-log}} covers the
 case where none of the controller's devices is in the group.
 
+The Removes that {{group-rules}} requires are not a choice the committer
+makes, so application authorization policy, such as the MIMI room policy
+{{I-D.ietf-mimi-room-policy}}, needs to permit them whatever the
+committer's role: the device that commits a revocation may not otherwise
+be allowed to remove another device of its user, and a member that
+commits a revoking device's Update proposal is removing another user's
+device. An application that refuses those Removes keeps revoked devices
+in its groups.
+
 ## Custody of Update Keys {#custody}
 
 This credential moves authority to whoever holds the `updateKeys`.
@@ -708,7 +718,15 @@ The author would like the working group's view on these questions:
 5. Cost of GroupContextExtensions. Because a GroupContextExtensions
    proposal replaces the whole extension list and only one is allowed
    per Commit, a pending GroupContextExtensions proposal from another
-   party cannot be combined with a change to the record.
+   party cannot be combined with a change to the record. An
+   implementation found that this also defeats the fallback: when a
+   device cannot commit its new log, it can send an Update proposal for
+   another member to commit, but that member's Commit is blocked by the
+   same pending proposal. Carrying the record as a component of the
+   `app_data_dictionary` extension, changed by AppDataUpdate proposals
+   ({{I-D.ietf-mls-extensions}}), may avoid this, since several
+   AppDataUpdate proposals for different components can be committed
+   together. This is being tried.
 6. Record growth. Entries are never removed, so the record grows with
    every user who has ever been a member. A way to retire entries
    without losing revocations, for example after the user's log has been
