@@ -731,8 +731,18 @@ The author would like the working group's view on these questions:
    one the user controls. In each case, key transparency
    {{I-D.ietf-keytrans-protocol}} would complement this design, not
    replace it. It detects a device the provider adds, where this design
-   prevents one, and it can cover first contact. The author would like
-   the working group's view on which encoding to use.
+   prevents one, and it can cover first contact. Another DID method
+   already has the property: did:plc, which most Bluesky (AT Protocol)
+   accounts use, is self-certifying (the DID is a hash of its signed
+   genesis operation) and keeps a public, hash-chained log of signed
+   operations that each list the account's keys. It differs in two ways
+   that matter here: a rotation key can override operations up to 72
+   hours old, so its history is not strictly append-only, and its keys
+   are usually P-256 or secp256k1 rather than Ed25519. One way to admit
+   it, and other encodings, is to state the group rules over an
+   abstract verified log of authorized keys and define each encoding as
+   a profile of it. The author would like the working group's view on
+   which encoding to use.
 8. Identity recovery. Losing devices does not lose the identity: an
    offline recovery key whose hash every entry commits to
    ({{custody}}) can append an entry that drops the lost devices and
