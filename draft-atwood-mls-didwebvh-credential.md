@@ -34,6 +34,7 @@ author:
 
 normative:
   RFC9420:
+  I-D.ietf-mls-extensions:
   RFC8032:
   RFC7493:
   DIDWEBVH:
@@ -66,7 +67,6 @@ informative:
   I-D.ietf-keytrans-architecture:
   I-D.mahy-mls-sd-cwt-credential:
   I-D.barnes-mls-addl-creds:
-  I-D.ietf-mls-extensions:
   RFC9943:
   I-D.ietf-mls-virtual-clients:
   GHOST:
@@ -256,7 +256,7 @@ SCID:
 
 Recorded head of S:
 : For an SCID S, the entry for S in the group's `did_webvh_heads`
-  GroupContext extension ({{heads-extension}}): the highest log version
+  GroupContext component ({{heads-extension}}): the highest log version
   the group has accepted for S, and the keys that version authorizes.
 
 Authorized key:
@@ -294,8 +294,8 @@ location, a resolver, witnesses or watchers during validation.
 Revocation works through the group itself. When Alice revokes a device,
 one of her remaining devices appends an entry that drops the revoked
 key, then sends a Commit whose UpdatePath carries the new log. The group
-records the newest head it has accepted for each SCID in a GroupContext
-extension, and that record never moves backwards. The rules in
+records the newest head it has accepted for each SCID in a component of
+the GroupContext, and that record never moves backwards. The rules in
 {{group-rules}} require the Commit that raises the record to remove
 every leaf whose key the new head no longer authorizes. Every member
 checks the same rules against the same tree and GroupContext, so they
@@ -445,18 +445,21 @@ A `did_webvh` credential MUST NOT appear in the `external_senders`
 GroupContext extension. A GroupContextExtensions proposal that would
 put one there MUST be rejected.
 
-## The Heads Extension {#heads-extension}
+## The Heads Component {#heads-extension}
 
+The record is the `did_webvh_heads` component of the GroupContext
+`app_data_dictionary` extension ({{Section 4.6 of I-D.ietf-mls-extensions}}).
 A client that lists `did_webvh` in the `credentials` field of its
-LeafNode `capabilities` MUST list `did_webvh_heads` in the `extensions`
-field and MUST implement the rules in {{group-rules}}. A GroupContext
-that contains `did_webvh_heads` MUST also contain a
-`required_capabilities` extension that lists `did_webvh_heads` in
-`extension_types` and `did_webvh` in `credential_types`
-({{Section 11.1 of RFC9420}}), so that every member enforces the rules.
-A group whose tree contains a `did_webvh` credential MUST carry the
-`did_webvh_heads` GroupContext extension, and a group that carries it
-MUST NOT remove it:
+LeafNode `capabilities` MUST list `did_webvh_heads` in the
+`app_components` component of its LeafNode and MUST implement the rules
+in {{group-rules}}. A group whose tree contains a `did_webvh` credential
+MUST carry the component, and its GroupContext `app_components` list
+MUST name it, so that every member enforces the rules
+({{Section 5 of I-D.ietf-mls-extensions}}). A group that carries the
+component MUST NOT remove it: an AppDataUpdate proposal for
+`did_webvh_heads` whose `op` is `remove` is invalid.
+
+The component's data is a `DIDWebVHHeads`:
 
 ~~~ tls-presentation
 struct {
@@ -489,13 +492,25 @@ never removed. At most one entry has a given `scid`. Entries are sorted
 in ascending lexicographic byte order of `scid`, a shorter value that is
 a prefix of a longer one sorting first.
 
-The extension lets the group remember a revocation after every leaf
+The `update` field of an AppDataUpdate proposal for `did_webvh_heads`
+({{Section 4.7 of I-D.ietf-mls-extensions}}) is also a `DIDWebVHHeads`.
+The updates in a Commit are applied in the order they appear: each entry
+replaces the entry with the same `scid`, or is inserted at its place in
+the sort order. An update that does not decode, or whose entries are not
+sorted, is invalid.
+
+The record lets the group remember a revocation after every leaf
 that carried the revoking log has left, and after every device of that
 user has left. Without it, the newest log the group knew about could
 leave with the last device that carried it, and an older log would make
-a revoked key valid again. Because the extension
-is part of the GroupContext, a new member receives it in the Welcome,
-and it feeds the key schedule.
+a revoked key valid again. Because the record is part of the
+GroupContext, a new member receives it in the Welcome, and it feeds the
+key schedule.
+
+Carrying the record as a component rather than as a GroupContext
+extension of its own means it is changed by AppDataUpdate proposals,
+which a Commit may hold alongside each other and alongside a
+GroupContextExtensions proposal, and which an external Commit may carry.
 
 ## Group Consistency Rules {#group-rules}
 
@@ -531,10 +546,14 @@ For each SCID S that has an entry in the previous epoch's
 `did_webvh_heads` but appears in no leaf of the resulting tree, the
 expected entry is that previous entry, unchanged.
 
-The `did_webvh_heads` extension in the resulting GroupContext MUST
+The `did_webvh_heads` component in the resulting GroupContext MUST
 contain exactly the expected entries. A Commit that changes the expected
-value MUST therefore include a GroupContextExtensions proposal that sets
-it. A Commit that only removes leaves never changes the expected value.
+value MUST therefore include AppDataUpdate proposals for
+`did_webvh_heads` that set it. A committer can send the whole record or
+only the entries that change, and an AppDataUpdate from another member,
+such as a device that sends its new log as an Update proposal, can be
+committed with it. A Commit that only removes leaves never changes the
+expected value.
 
 ### Rules
 
@@ -542,7 +561,7 @@ The following MUST hold for the resulting tree and GroupContext. A
 Commit, Welcome or GroupInfo for which any of them fails MUST be
 rejected.
 
-Extension matches:
+Record matches:
 : `did_webvh_heads` contains exactly the expected entries.
 
 Consistency with the reference entry:
@@ -564,13 +583,10 @@ further rules:
   ({{Section 12.2 of RFC9420}}). Another member has to commit it, for
   example by committing an Update proposal, sent by one of the user's
   other devices, that carries the new log.
-* An external Commit cannot carry a GroupContextExtensions proposal, so
-  it is valid only if it leaves `did_webvh_heads` unchanged. A device
-  can rejoin by external Commit only if its key is already authorized by
-  the recorded head and its log is not newer than the recorded head. A
-  client whose SCID has no entry in `did_webvh_heads`, which includes
-  every new user, cannot join by external Commit and has to be added by
-  an existing member ({{open-issues}}).
+* An external Commit can carry AppDataUpdate proposals
+  ({{Section 4.7 of I-D.ietf-mls-extensions}}), so a device whose log is
+  newer than the recorded head, or a new user, can join by external
+  Commit and set its own entry, subject to the same rules.
 
 A member joining by Welcome has no previous epoch, so it cannot compute
 the expected entries. It instead checks that `did_webvh_heads` has an
@@ -628,7 +644,7 @@ the head, because the SCID alone means nothing to a person.
 2. For every group the user belongs to, one of the user's remaining
    devices sends a Commit whose UpdatePath LeafNode carries the new log,
    together with Remove proposals for the revoked device's leaves and a
-   GroupContextExtensions proposal that updates `did_webvh_heads`. The
+   AppDataUpdate proposal that updates `did_webvh_heads`. The
    rules in {{group-rules}} make the Remove mandatory.
 
 The revocation reaches a group when one of the controller's own devices
@@ -698,13 +714,14 @@ RFC Editor: please remove this section before publication.
 
 The author would like the working group's view on these questions:
 
-1. Extension or component. Carrying the record as a component of the
-   `app_data_dictionary` extension {{I-D.ietf-mls-extensions}}, updated
-   by AppDataUpdate proposals, would let an external Commit or an
-   external sender update it. That would allow new users to join by
-   external Commit, which this document does not, and would avoid a
-   GroupContextExtensions proposal in every Commit that changes the
-   record.
+1. Extension or component. (Resolved in -01: a component.) -00
+   carried the record as a GroupContext extension of its own. -01 makes
+   it a component of the `app_data_dictionary` extension, changed by
+   AppDataUpdate proposals, which lets new users join by external
+   Commit. What remains open is whether to keep the extension form as an
+   alternative for groups that do not use {{I-D.ietf-mls-extensions}}:
+   two forms would mean two sets of rules to test and a way to tell
+   which one a group uses.
 2. ReInit and branching. Neither carries the record into the new group,
    so a revocation known to the old group can be lost. A ReInit could be
    required to carry `did_webvh_heads` in its extensions.
@@ -715,18 +732,20 @@ The author would like the working group's view on these questions:
 4. Other signature schemes. Supporting cipher suites whose signature
    scheme is not Ed25519, such as 0x0002 with P-256, would admit
    deployments that need them.
-5. Cost of GroupContextExtensions. Because a GroupContextExtensions
-   proposal replaces the whole extension list and only one is allowed
-   per Commit, a pending GroupContextExtensions proposal from another
-   party cannot be combined with a change to the record. An
-   implementation found that this also defeats the fallback: when a
-   device cannot commit its new log, it can send an Update proposal for
-   another member to commit, but that member's Commit is blocked by the
-   same pending proposal. Carrying the record as a component of the
-   `app_data_dictionary` extension, changed by AppDataUpdate proposals
-   ({{I-D.ietf-mls-extensions}}), may avoid this, since several
-   AppDataUpdate proposals for different components can be committed
-   together. This is being tried.
+5. Cost of GroupContextExtensions. (Resolved in -01.) The record was a
+   GroupContext extension changed by a GroupContextExtensions proposal,
+   of which a Commit may hold only one, so a pending
+   GroupContextExtensions proposal from another party blocked every
+   record change, including the fallback where a device sends its new
+   log as an Update proposal for another member to commit. As an
+   `app_data_dictionary` component the record is changed by
+   AppDataUpdate proposals, which a Commit may hold alongside a
+   GroupContextExtensions proposal and alongside each other. An
+   implementation confirmed that the blocked cases now succeed, and that
+   two users' record changes can be committed together. The update
+   semantics (replace or insert by `scid`) are open: a whole-record
+   replacement would be simpler, but would make a partial update
+   committed by reference useless.
 6. Record growth. Entries are never removed, so the record grows with
    every user who has ever been a member. A way to retire entries
    without losing revocations, for example after the user's log has been
@@ -928,13 +947,13 @@ Types" registry defined in {{Section 17.5 of RFC9420}}:
 | TBD1 (suggested value 0x0008) | did_webvh | N | RFC XXXX |
 {: title="New MLS credential type"}
 
-IANA is also requested to add the following entry to the "MLS Extension
-Types" registry defined in {{Section 17.3 of RFC9420}}:
+IANA is also requested to add the following entry to the "MLS Component
+Types" registry defined in {{Section 7.5 of I-D.ietf-mls-extensions}}:
 
-| Value | Name | Message(s) | Recommended | Reference |
+| Value | Name | Where | Recommended | Reference |
 |---|---|---|---|---|
-| TBD2 (suggested value 0x0013) | did_webvh_heads | GC | N | RFC XXXX |
-{: title="New MLS extension type"}
+| TBD2 | did_webvh_heads | GC | N | RFC XXXX |
+{: title="New MLS component type"}
 
 --- back
 
