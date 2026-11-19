@@ -459,6 +459,14 @@ MUST name it, so that every member enforces the rules
 component MUST NOT remove it: an AppDataUpdate proposal for
 `did_webvh_heads` whose `op` is `remove` is invalid.
 
+A request for key material can name required credential types but not
+required components (Section 5.2 of {{I-D.ietf-mimi-protocol}}). Because
+a client that lists `did_webvh` also lists `did_webvh_heads`, a provider
+answering a request that requires the `did_webvh` credential type MAY
+treat it as also requiring the component, and SHOULD return only
+KeyPackages whose LeafNode lists both, so that the requester can add
+the client to the group.
+
 The component's data is a `DIDWebVHHeads`:
 
 ~~~ tls-presentation
