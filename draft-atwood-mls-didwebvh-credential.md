@@ -947,12 +947,16 @@ Types" registry defined in {{Section 17.5 of RFC9420}}:
 | TBD1 (suggested value 0x0008) | did_webvh | N | RFC XXXX |
 {: title="New MLS credential type"}
 
+Until IANA assigns a value, implementations use the suggested value
+0xF013, which is in the private-use range of that registry, so that they
+interoperate.
+
 IANA is also requested to add the following entry to the "MLS Component
 Types" registry defined in {{Section 7.5 of I-D.ietf-mls-extensions}}:
 
 | Value | Name | Where | Recommended | Reference |
 |---|---|---|---|---|
-| TBD2 | did_webvh_heads | GC | N | RFC XXXX |
+| TBD2 (suggested value 0xF013) | did_webvh_heads | GC | N | RFC XXXX |
 {: title="New MLS component type"}
 
 --- back
